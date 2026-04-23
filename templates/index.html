@@ -1,0 +1,22 @@
+<h2>Welcome, {{ session.username }}</h2>
+<a href="/logout">Logout</a>
+{% if session.is_admin %} | <a href="/admin">Admin</a>{% endif %}
+
+{% for msg in get_flashed_messages() %}<p>{{ msg }}</p>{% endfor %}
+
+<h3>Book a space</h3>
+<form method="post" action="/book">
+  <select name="car_park">
+    <option>A</option>
+    <option>B</option>
+  </select>
+  <input type="date" name="date" required>
+  <button type="submit">Book</button>
+</form>
+
+<h3>My Bookings</h3>
+{% for b in bookings %}
+  <p>Car Park {{ b.car_park }} — {{ b.date }} <a href="/cancel/{{ b.id }}">Cancel</a></p>
+{% else %}
+  <p>No bookings yet.</p>
+{% endfor %}

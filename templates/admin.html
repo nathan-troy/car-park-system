@@ -1,0 +1,7 @@
+<h2>All Bookings</h2>
+<a href="/">Back</a>
+{% for b in bookings %}
+  <p>{{ b.username }} — Car Park {{ b.car_park }} — {{ b.date }}</p>
+{% else %}
+  <p>No bookings.</p>
+{% endfor %}

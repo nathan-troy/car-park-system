@@ -6,17 +6,20 @@
 
 <h3>Book a space</h3>
 <form method="post" action="/book">
-  <select name="car_park">
-    <option>A</option>
-    <option>B</option>
+  <select name="car_park_id" required>
+    <option value="" disabled selected>Select a car park</option>
+    {% for cp in car_parks %}
+      <option value="{{ cp.car_park_id }}">{{ cp.name }} ({{ cp.capacity }} spaces)</option>
+    {% endfor %}
   </select>
-  <input type="date" name="date" required>
+  <input type="datetime-local" name="date_start" required>
+  <input type="datetime-local" name="date_end" required>
   <button type="submit">Book</button>
 </form>
 
 <h3>My Bookings</h3>
 {% for b in bookings %}
-  <p>Car Park {{ b.car_park }} — {{ b.date }} <a href="/cancel/{{ b.id }}">Cancel</a></p>
+  <p>{{ b.car_park_name }} — {{ b.date_start }} to {{ b.date_end }} <a href="/cancel/{{ b.booking_id }}">Cancel</a></p>
 {% else %}
   <p>No bookings yet.</p>
 {% endfor %}

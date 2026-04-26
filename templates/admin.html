@@ -1,7 +1,7 @@
 <h2>All Bookings</h2>
 <a href="/">Back</a>
 {% for b in bookings %}
-  <p>{{ b.username }} — Car Park {{ b.car_park }} — {{ b.date }}</p>
+  <p>{{ b.username }} — {{ b.car_park_name }} — {{ b.date_start }} to {{ b.date_end }} <a href="/cancel/{{ b.booking_id }}">Cancel</a></p>
 {% else %}
   <p>No bookings.</p>
 {% endfor %}

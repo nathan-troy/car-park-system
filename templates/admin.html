@@ -1,7 +1,53 @@
-<h2>All Bookings</h2>
-<a href="/">Back</a>
-{% for b in bookings %}
-  <p>{{ b.username }} — {{ b.car_park_name }} — {{ b.date_start }} to {{ b.date_end }} <a href="/cancel/{{ b.booking_id }}">Cancel</a></p>
-{% else %}
-  <p>No bookings.</p>
-{% endfor %}
+{% extends 'base.html' %}
+{% block title %}Admin Panel{% endblock %}
+{% block body %}
+<nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="/">Vectura Admin</a>
+        <div class="d-flex align-items-center gap-3">
+            <a href="/" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-sm btn-danger">Logout</a>
+        </div>
+    </div>
+</nav>
+<main class="container main-content">
+    <div class="card card-surface p-4">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h1 class="h4 mb-1">Manage all Reservations</h1>
+                <p class="text-muted mb-0">Review active bookings across all lots and manage them instantly.</p>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Lot</th>
+                        <th>Spot</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if all_bookings %}
+                        {% for b in all_bookings %}
+                        <tr>
+                            <td><strong>{{ b.username }}</strong></td>
+                            <td>{{ b.car_park_name }}</td>
+                            <td>{{ b.car_park_name[-1] }}{{ b.spot_number }}</td>
+                            <td>{{ b.date_start }}</td>
+                            <td>{{ b.date_end }}</td>
+                            <td><a href="{{ url_for('cancel', booking_id=b.booking_id) }}" class="btn btn-sm btn-outline-danger">Void</a></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="6" class="text-center text-muted py-4">No active bookings at this time.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+{% endblock %}

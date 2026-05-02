@@ -1,25 +1,135 @@
-<h2>Welcome, {{ session.username }}</h2>
-<a href="/logout">Logout</a>
-{% if session.is_admin %} | <a href="/admin">Admin</a>{% endif %}
+{% extends 'base.html' %}
+{% block title %}Park Dashboard{% endblock %}
+{% block body %}
+<nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="/">Vectura Park Management</a>
+        <div class="d-flex align-items-center gap-3">
+            {% if session.get('is_admin') %}
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-sm btn-outline-primary">Admin Panel</a>
+            {% endif %}
+            <span class="text-muted small">Signed in as <strong>{{ session.username }}</strong></span>
+            <a href="{{ url_for('logout') }}" class="btn btn-sm btn-danger">Logout</a>
+        </div>
+    </div>
+</nav>
+<main class="container main-content">
+    <div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="page-heading mb-2">Parking Overview</h1>
+            <p class="text-muted">Select an available spot, then choose your reservation window to confirm your booking.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <span class="status-pill bg-primary-soft text-primary">Open lot overview</span>
+            <span class="status-pill bg-success-soft text-success">Free spaces ready</span>
+        </div>
+    </div>
 
-{% for msg in get_flashed_messages() %}<p>{{ msg }}</p>{% endfor %}
+    <div class="row g-4 mb-4">
+        {% for cp in car_parks %}
+        <div class="col-lg-6">
+            <div class="parking-card">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <h5 class="mb-1">{{ cp.name }}</h5>
+                        <p class="text-muted mb-0">{{ cp.occupied_spots|length }} of {{ cp.capacity }} occupied</p>
+                    </div>
+                    <span class="badge rounded-pill text-bg-secondary">{{ cp.capacity - cp.occupied_spots|length }} free</span>
+                </div>
+                <div class="parking-grid">
+                    {% set prefix = cp.name[-1] %}
+                    {% for i in range(1, (cp.capacity // 2) + 1) %}
+                    <div class="spot {{ 'occupied' if i in cp.occupied_spots else 'available' }}" onclick="selectSpot(this, {{ cp.id }}, {{ i }}, '{{ cp.name }}', '{{ prefix }}{{ i }}')">
+                        {{ prefix }}{{ i }}
+                    </div>
+                    {% endfor %}
+                    {% for i in range((cp.capacity // 2) + 1, cp.capacity + 1) %}
+                    <div class="spot {{ 'occupied' if i in cp.occupied_spots else 'available' }}" onclick="selectSpot(this, {{ cp.id }}, {{ i }}, '{{ cp.name }}', '{{ prefix }}{{ i }}')">
+                        {{ prefix }}{{ i }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 
-<h3>Book a space</h3>
-<form method="post" action="/book">
-  <select name="car_park_id" required>
-    <option value="" disabled selected>Select a car park</option>
-    {% for cp in car_parks %}
-      <option value="{{ cp.car_park_id }}">{{ cp.name }} ({{ cp.capacity }} spaces)</option>
-    {% endfor %}
-  </select>
-  <input type="datetime-local" name="date_start" required>
-  <input type="datetime-local" name="date_end" required>
-  <button type="submit">Book</button>
-</form>
-
-<h3>My Bookings</h3>
-{% for b in bookings %}
-  <p>{{ b.car_park_name }} — {{ b.date_start }} to {{ b.date_end }} <a href="/cancel/{{ b.booking_id }}">Cancel</a></p>
-{% else %}
-  <p>No bookings yet.</p>
-{% endfor %}
+    <div class="row g-4">
+        <div class="col-xl-5">
+            <div class="card card-surface p-4">
+                <h4 class="mb-3">Reserve a spot</h4>
+                <form action="{{ url_for('book') }}" method="POST">
+                    <input type="hidden" name="car_park_id" id="form_cp_id">
+                    <input type="hidden" name="spot_number" id="form_spot_num">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Selected Spot</label>
+                        <input type="text" id="display_info" class="form-control" readonly placeholder="Choose a spot from above">
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label class="form-label text-muted">From</label>
+                            <input type="datetime-local" name="date_start" class="form-control" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label text-muted">Until</label>
+                            <input type="datetime-local" name="date_end" class="form-control" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" id="book_btn" disabled>Confirm Booking</button>
+                </form>
+            </div>
+        </div>
+        <div class="col-xl-7">
+            <div class="card card-surface p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <h4 class="mb-1">My Current Reservations</h4>
+                        <p class="text-muted mb-0">Keep track of your active bookings and cancel if needed.</p>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-borderless align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Lot</th>
+                                <th>Spot</th>
+                                <th>Start</th>
+                                <th>End</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if user_bookings %}
+                                {% for b in user_bookings %}
+                                <tr>
+                                    <td>{{ b.car_park_name }}</td>
+                                    <td>{{ b.car_park_name[-1] }}{{ b.spot_number }}</td>
+                                    <td>{{ b.date_start.replace('T', ' ') }}</td>
+                                    <td>{{ b.date_end.replace('T', ' ') }}</td>
+                                    <td><a href="{{ url_for('cancel', booking_id=b.booking_id) }}" class="btn btn-sm btn-outline-danger">Cancel</a></td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="5" class="text-muted text-dark text-center py-4">No bookings yet. Select a slot to create one.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+function selectSpot(el, cpId, spotNum, cpName, displayLabel) {
+    if (el.classList.contains('occupied')) return;
+    document.querySelectorAll('.spot').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('form_cp_id').value = cpId;
+    document.getElementById('form_spot_num').value = spotNum;
+    document.getElementById('display_info').value = cpName + ' — ' + displayLabel;
+    document.getElementById('book_btn').disabled = false;
+}
+</script>
+{% endblock %}
